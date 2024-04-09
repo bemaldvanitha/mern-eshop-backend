@@ -1,11 +1,34 @@
+import bcrypt from "bcryptjs";
+
 import asyncHandler from "../middleware/asyncHandler.js";
-import User from "../models/userModel.js.js";
+import User from "../models/userModel.js";
 
 // Auth User
 // POST /api/users/login
 // Public
 const authUser = asyncHandler(async (req, res) => {
-    return res.send('Auth user');
+    const { email, password } = req.body;
+
+    const user = await User.findOne({
+        email: email
+    });
+
+    if(user){
+        const isPasswordMatched = await bcrypt.compare(password, user.password);
+
+        if(isPasswordMatched){
+            return res.json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                isAdmin: user.isAdmin
+            })
+        }else {
+            return res.status(401).json({ message: 'Auth error' });
+        }
+    }else {
+        return res.status(401).json({ message: 'Auth error' });
+    }
 });
 
 // register user
