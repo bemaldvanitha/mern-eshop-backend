@@ -50,7 +50,47 @@ const authUser = asyncHandler(async (req, res) => {
 // POST /api/users
 // Public
 const registerUser = asyncHandler(async (req, res) => {
-    return res.send('Register user');
+    const { name, email, password } = req.body;
+    const userExist = await User.findOne({
+        email: email
+    });
+
+    if(userExist){
+        return res.status(400).json({ message: 'User already exist' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = await User.create({
+        name: name,
+        email: email,
+        password: hashedPassword
+    });
+
+    if(user){
+        const token = jwt.sign({
+            userId: user._id
+        }, process.env.JWT_SECRET, {
+            expiresIn: '30d'
+        });
+
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== 'development',
+            sameSite: 'strict',
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        });
+
+        return res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            isAdmin: user.isAdmin
+        });
+    }else{
+        return res.status(400).json({ message: 'Invalid user' });
+    }
 });
 
 // Logout user
