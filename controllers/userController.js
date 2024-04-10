@@ -108,14 +108,45 @@ const logoutUser = asyncHandler(async (req, res) => {
 // GET /api/users/profile
 // Private
 const getUserProfile = asyncHandler(async (req, res) => {
-    return res.send('Get user profile');
+    const user = await User.findById(req.user._id);
+
+    if(user){
+        return res.status(200).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            isAdmin: user.isAdmin
+        });
+    }else{
+        return res.status(404).json('User not found');
+    }
 });
 
 // Update User profile
 // PUT /api/users/profile
 // Private
 const updateUserProfile = asyncHandler(async (req, res) => {
-    return res.send('Update user');
+    const user = await User.findById(req.user._id);
+
+    if(user){
+        user.name = req.body.name || user.name;
+        user.email = req.body.email || user.email;
+
+        if(req.body.password){
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(req.body.password, salt);
+        }
+        const updatedUser = await user.save();
+
+        return res.status(200).json({
+            _id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            isAdmin: updatedUser.isAdmin
+        });
+    }else{
+        return res.status(404).json('User not found');
+    }
 });
 
 // Get Users
