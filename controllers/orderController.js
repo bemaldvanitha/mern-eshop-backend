@@ -5,21 +5,52 @@ import Order from "../models/orderModel.js";
 // POST /api/orders
 // Private
 const addOrderItems = asyncHandler(async (req, res) => {
-    return res.send('Add order item')
+    const { orderItems, shippingAddress, paymentMethod,
+        itemsPrice, taxPrice, shippingPrice, totalPrice } = req.body;
+
+    if(orderItems && orderItems.length === 0){
+        return res.status(400).json({ message: 'No order items' });
+    }
+
+    const order = new Order({
+        orderItems: orderItems.map(x => ({
+            ...x,
+            product: x._id,
+            _id: undefined
+        })),
+        user: req.user._id,
+        shippingAddress: shippingAddress,
+        paymentMethod: paymentMethod,
+        itemsPrice: itemsPrice,
+        taxPrice: taxPrice,
+        shippingPrice: shippingPrice,
+        totalPrice: totalPrice
+    });
+
+    const createdOrder = await order.save();
+    return res.status(201).json(createdOrder);
 });
 
 // Get login user order
 // GET /api/orders/myorders
 // Private
 const getMyOrders = asyncHandler(async (req, res) => {
-    return res.send('Get my orders')
+    const orders = await Order.find({ user: req.user._id });
+    return res.status(200).json(orders);
 });
 
 // get order by id
 // GET /api/orders/:id
 // Private
 const getOrderById = asyncHandler(async (req, res) => {
-    return res.send('get order by id')
+    const order = await Order
+        .findById(req.params.id).populate('user', 'name email');
+
+    if(order){
+        return res.status(200).json(order);
+    }else{
+        return res.status(404).json({ message: 'No Order in this id' })
+    }
 });
 
 // update order to paid
