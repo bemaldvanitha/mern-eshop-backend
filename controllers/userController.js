@@ -153,28 +153,62 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 // GET /api/users
 // Private
 const getUsers = asyncHandler(async (req, res) => {
-    return res.send('get users');
+    const users = await User.find({});
+    res.status(200).json(users);
 });
 
 // Delete User
 // DELETE /api/users/:id
 // Private
 const deleteUser = asyncHandler(async (req, res) => {
-    return res.send('Delete user');
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+        if (user.isAdmin) {
+            return res.status(400).json({ message: 'Can not delete admin user' });
+        }
+        await User.deleteOne({ _id: user._id });
+        return res.json({ message: 'User removed' });
+    } else {
+        return res.status(404).json({ message: 'User not found' });
+    }
 });
 
 // Get User by id
 // GET /api/users/:id
 // Private
 const getUserById = asyncHandler(async (req, res) => {
-    return res.send('Get user by id');
+    const user = await User.findById(req.params.id).select('-password');
+
+    if (user) {
+        return res.json(user);
+    } else {
+        return res.status(404).json({ message: 'User not found' });
+    }
 });
 
 // Update User
 // PUT /api/users/:id
 // Private
 const updateUser = asyncHandler(async (req, res) => {
-    return res.send('Update user');
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+        user.name = req.body.name || user.name;
+        user.email = req.body.email || user.email;
+        user.isAdmin = Boolean(req.body.isAdmin);
+
+        const updatedUser = await user.save();
+
+        res.status(200).json({
+            _id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            isAdmin: updatedUser.isAdmin,
+        });
+    } else {
+        res.status(404).json({ message: 'User not found' });
+    }
 });
 
 export {
